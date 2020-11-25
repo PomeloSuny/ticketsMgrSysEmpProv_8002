@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC 
+"-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sy.ticketsMgrSysEmpProv_8002.mapper.EmpMapper">
+	<resultMap type="EmpVO" id="empMap">
+		<id column="emp_id" property="empId"/>
+		<result column="account" property="account"/>
+		<result column="pwd" property="pwd"/>
+		<result column="real_name" property="realName"/>
+		<result column="sex" property="sex"/>
+		<result column="nationality" property="nationality"/>
+		<result column="id_card_num" property="idCardNum"/>
+		<result column="hire_date" property="hireDate"/>
+		<result column="telephone" property="telephone"/>
+		<result column="address" property="address"/>
+		<result column="del_flag" property="delFlag"/>
+		<association property="role" resultMap="rolesMap"></association>
+		
+	</resultMap>
+	<resultMap type="RolesVO" id="rolesMap">
+		<id column="role_id" property="roleId"/>
+		<result column="role_name" property="roleName"/>
+	</resultMap>
+	<select id="getMaxRowCount" resultType="_int" parameterType="map">
+			SELECT COUNT(1)
+			FROM emps e,roles r
+			WHERE e.duty=r.role_id
+	</select>
+	<select id="showEmps" resultMap="empMap" parameterType="map">
+				SELECT emp_id,account,pwd,real_name,sex,
+						duty,nationality,hire_date,id_card_num,dob,
+						hire_date,telephone,address 
+					FROM(
+							SELECT t.*,emp_id rn
+							FROM 
+							(SELECT e.*,role_name
+								FROM emps e,roles r
+								WHERE e.duty = r.role_id
+						<include refid="orderSql"></include> ) t) t
+						WHERE rn BETWEEN #{startRow} AND #{endRow}	
+	</select>
+	<sql id="orderSql">
+		<if test="orderColName!=null">
+			ORDER BY ${orderColName} ${orderFlag}
+		</if>
+	</sql>
+	
+	<select id="getEmpByAccount"  resultMap="empMap" parameterType="EmpVO">
+			SELECT emp_id,account,pwd,real_name,sex,roles.role_id, 
+					roles.role_name,nationality,hire_date,id_card_num,dob,
+					hire_date,telephone,address,del_flag
+			FROM emps INNER JOIN roles ON emps.duty=roles.role_id WHERE del_flag=0 and account=#{account};
+	</select>
+	
+	<select id="findEmpByAccountAndPwd" resultMap="empMap" parameterType="EmpVO">
+		select account,pwd from emps where account=#{account} or telephone=#{telephone} and pwd=#{pwd} and del_flag=0
+	</select>
+	<select id="getEmps" resultMap="empMap" parameterType="map">
+		SELECT emp_id,account,real_name,sex, roles.role_name,
+				nationality,hire_date,id_card_num,telephone,address
+		FROM emps INNER JOIN roles ON emps.duty=roles.role_id WHERE del_flag=0;
+	</select>
+	<select id="getRoles" resultMap="rolesMap" parameterType="map">
+		SELECT role_id,role_name FROM roles 
+	</select>
+	<select id="getEmpsByDuty"  resultMap="empMap" parameterType="map">
+	
+	SELECT emp_id,account,pwd,real_name,sex,roles.role_id, roles.role_name,nationality,hire_date,id_card_num,dob,hire_date,telephone,address
+		FROM emps INNER JOIN roles ON emps.duty=roles.role_id WHERE del_flag=0 and roles.role_id=#{roleId};
+	
+	</select>
+	<select id="getEmpById" resultMap="empMap" parameterType="_int">
+		SELECT emp_id,account,pwd,real_name,sex,roles.role_id, roles.role_name,nationality,hire_date,id_card_num,dob,hire_date,telephone,address,del_flag
+		FROM emps INNER JOIN roles ON emps.duty=roles.role_id WHERE del_flag=0 and emp_id=#{empId};
+	</select>
+	<update id="modifyEmp" parameterType="EmpVO">
+		update emps set
+			account=#{account},
+			real_name=#{realName},
+			sex=#{sex},
+			nationality=#{nationality},
+			id_card_num=#{idCardNum},
+			dob=#{dob},
+			hire_date=#{hireDate},
+			address=#{address},
+			telephone=#{telephone},
+			duty=#{role.roleId}
+		where emp_id=#{empId}
+	</update>
+	<update id="modifyPwd" parameterType="EmpVO">
+		UPDATE emps SET pwd=#{pwd} WHERE account=#{account} and del_flag=0
+	</update>
+	<insert id="addEmp" parameterType="EmpVO">
+		insert into emps(account,pwd,real_name,sex,nationality,
+						id_card_num,dob,hire_date,address,telephone,
+						duty)
+		values(#{account},  666,  #{realName},  #{sex},  #{nationality},
+			   #{idCardNum},  #{dob},  #{hireDate},  #{address},  #{telephone},
+			   #{role.roleId})
+	</insert>
+	<update id="removeEmpById" parameterType="_int">
+		UPDATE emps SET del_flag = 1
+		WHERE emp_id=#{empId}
+	</update>
+	<select id="getTelephone" parameterType="string" resultType="_int">
+			select count(1) from emps where telephone = #{telephone}
+		</select>
+		<select id="getIdCardNum" parameterType="string" resultType="_int">
+			select count(1) from emps where id_card_num = #{idCardNum}
+		</select>
+</mapper>
